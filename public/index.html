@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Playlist Encore</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #edeef0;
+    --surface: #f8f8f9;
+    --ink: #161b2e;
+    --muted: #5b6178;
+    --line: #c9ccd6;
+    --fret-green: #2fa84f;
+    --fret-red: #d8343a;
+    --fret-yellow: #e8b923;
+    --fret-blue: #2f6fdb;
+    --fret-orange: #e8742a;
+    --error: #a3202a;
+    --font: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font);
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+  main {
+    max-width: 44rem;
+    margin: 0 auto;
+    padding: 3rem 1.25rem 5rem;
+  }
+
+  .frets { display: flex; gap: 0.5rem; margin-bottom: 1.25rem; }
+  .fret {
+    width: 1.5rem; height: 1.5rem; border-radius: 50%;
+    background: var(--c); opacity: 0.25;
+    animation: light 0.5s ease-out forwards;
+    animation-delay: calc(var(--i) * 140ms);
+  }
+  @keyframes light { to { opacity: 1; } }
+
+  h1 {
+    margin: 0;
+    font-size: clamp(2.5rem, 9vw, 4.25rem);
+    font-weight: 850;
+    font-stretch: 75%;
+    line-height: 0.95;
+    letter-spacing: -0.02em;
+  }
+  .lead { margin: 0.9rem 0 2rem; color: var(--muted); max-width: 34rem; }
+
+  form { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  input[type="url"], input[type="text"] {
+    flex: 1 1 18rem;
+    min-width: 0;
+    padding: 0.85rem 1rem;
+    font: inherit;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1.5px solid var(--ink);
+    border-radius: 4px;
+  }
+  button, .btn {
+    font: inherit;
+    font-weight: 650;
+    padding: 0.85rem 1.25rem;
+    border-radius: 4px;
+    border: 1.5px solid var(--ink);
+    background: var(--ink);
+    color: var(--surface);
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+  }
+  button.ghost, .btn.ghost { background: transparent; color: var(--ink); }
+  button:disabled { opacity: 0.55; cursor: wait; }
+  :focus-visible { outline: 3px solid var(--fret-blue); outline-offset: 2px; }
+
+  .providers { display: flex; flex-wrap: wrap; gap: 0.4rem 1.25rem; margin: 1rem 0 0; padding: 0; list-style: none; font-size: 0.9rem; }
+  .providers li { display: flex; align-items: center; gap: 0.4rem; color: var(--muted); }
+  .providers .dot { width: 0.65rem; height: 0.65rem; border-radius: 50%; background: var(--line); }
+  .providers li.ready .dot { background: var(--fret-green); }
+  .providers li.ready { color: var(--ink); }
+
+  .alt { margin-top: 1.25rem; font-size: 0.9rem; color: var(--muted); }
+  .alt label { text-decoration: underline; cursor: pointer; color: var(--ink); }
+  .alt input[type="file"] { position: absolute; width: 1px; height: 1px; opacity: 0; }
+  .alt input[type="file"]:focus-visible + label { outline: 3px solid var(--fret-blue); outline-offset: 2px; }
+
+  #message { margin-top: 1.5rem; min-height: 1.5rem; }
+  #message.error {
+    color: var(--error);
+    border-left: 4px solid var(--fret-red);
+    padding: 0.25rem 0 0.25rem 0.9rem;
+  }
+  #message.ok { color: var(--muted); }
+  #message .btn { margin-top: 0.75rem; }
+
+  #result[hidden] { display: none; }
+  #result { margin-top: 2.5rem; }
+  .result-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 0.75rem; border-bottom: 2px solid var(--ink); padding-bottom: 0.75rem; }
+  .result-head h2 { margin: 0; font-size: 1.5rem; font-weight: 800; font-stretch: 85%; line-height: 1.15; }
+  .result-head p { margin: 0.1rem 0 0; color: var(--muted); font-size: 0.9rem; }
+  .actions { display: flex; gap: 0.5rem; }
+  .actions button { padding: 0.5rem 0.9rem; font-size: 0.9rem; }
+
+  ol.setlist { list-style: none; margin: 0; padding: 0; }
+  ol.setlist li {
+    display: grid;
+    grid-template-columns: 2.5rem 1fr;
+    align-items: baseline;
+    column-gap: 0.25rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .n { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .t { font-weight: 650; overflow-wrap: anywhere; }
+  .a { color: var(--muted); }
+  .raw { display: block; font-size: 0.8rem; color: var(--muted); margin-top: 0.15rem; overflow-wrap: anywhere; }
+  .t a { color: inherit; text-decoration-color: var(--line); text-underline-offset: 3px; }
+
+  ol.setlist li.has-action { grid-template-columns: 2.5rem 1fr auto; }
+  .chorus {
+    font-size: 0.85rem;
+    font-weight: 650;
+    padding: 0.35rem 0.7rem;
+    border: 1.5px solid var(--ink);
+    border-radius: 4px;
+    color: var(--ink);
+    text-decoration: none;
+    white-space: nowrap;
+    align-self: center;
+  }
+  .chorus:hover { background: var(--ink); color: var(--surface); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fret { animation: none; opacity: 1; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <div class="frets" aria-hidden="true">
+    <span class="fret" style="--c: var(--fret-green); --i: 0"></span>
+    <span class="fret" style="--c: var(--fret-red); --i: 1"></span>
+    <span class="fret" style="--c: var(--fret-yellow); --i: 2"></span>
+    <span class="fret" style="--c: var(--fret-blue); --i: 3"></span>
+    <span class="fret" style="--c: var(--fret-orange); --i: 4"></span>
+  </div>
+  <h1>Playlist Encore</h1>
+  <p class="lead">Cole o link de uma playlist e veja todas as músicas dela. Funciona com YouTube, Spotify e Apple Music.</p>
+
+  <form id="form">
+    <input id="url" type="url" required autocomplete="off" aria-label="Link da playlist"
+           placeholder="https://www.youtube.com/playlist?list=…">
+    <button id="submit" type="submit">Listar músicas</button>
+  </form>
+
+  <ul class="providers" id="providers" aria-label="Plataformas configuradas"></ul>
+
+  <div class="alt">
+    Prefere usar um arquivo?
+    <input id="csv" type="file" accept=".csv,text/csv">
+    <label for="csv">Importar um CSV do Spotify (Exportify)</label>
+  </div>
+
+  <div id="message" role="status" aria-live="polite"></div>
+
+  <section id="result" hidden>
+    <div class="result-head">
+      <div>
+        <h2 id="result-title"></h2>
+        <p id="result-count"></p>
+        <p id="hint" hidden></p>
+      </div>
+      <div class="actions">
+        <button type="button" class="ghost" id="copy">Copiar lista</button>
+        <button type="button" class="ghost" id="download">Baixar CSV</button>
+      </div>
+    </div>
+    <ol class="setlist" id="list"></ol>
+  </section>
+</main>
+
+<script>
+  const $ = (s) => document.querySelector(s);
+  const form = $("#form");
+  const msg = $("#message");
+  const names = { youtube: "YouTube", apple: "Apple Music", spotify: "Spotify", csv: "CSV" };
+  // Se descobrir como o enchor.us recebe a busca pela URL, coloque aqui com {q} no lugar do termo.
+  // Exemplo (NÃO verificado): "https://www.enchor.us/?search={q}"
+  const CHORUS_URL_TEMPLATE = "https://www.enchor.us/";
+  let current = [];
+  let currentName = "playlist";
+
+  function setMessage(text, kind, withLogin) {
+    msg.className = kind || "";
+    msg.textContent = text || "";
+    if (withLogin) {
+      const a = document.createElement("a");
+      a.href = "/auth/spotify/login";
+      a.className = "btn";
+      a.textContent = "Entrar com o Spotify";
+      msg.appendChild(document.createElement("br"));
+      msg.appendChild(a);
+    }
+  }
+
+  async function loadStatus() {
+    const s = await fetch("/api/status").then((r) => r.json());
+    const rows = [
+      ["YouTube", s.youtube, s.youtube ? "pronto" : "sem chave no .env"],
+      ["Apple Music", s.apple, s.apple ? "pronto" : "sem credenciais no .env"],
+      [
+        "Spotify",
+        s.spotify.configured && s.spotify.loggedIn,
+        !s.spotify.configured ? "sem Client ID no .env" : s.spotify.loggedIn ? "conectado" : "precisa entrar",
+      ],
+    ];
+    const ul = $("#providers");
+    ul.replaceChildren();
+    for (const [label, ready, note] of rows) {
+      const li = document.createElement("li");
+      if (ready) li.className = "ready";
+      const dot = document.createElement("span");
+      dot.className = "dot";
+      li.append(dot, `${label}: ${note}`);
+      ul.appendChild(li);
+    }
+  }
+
+  function render(data) {
+    current = data.items;
+    currentName = data.name || "playlist";
+    $("#result-title").textContent = data.name || "Playlist sem nome";
+    $("#result-count").textContent = `${data.items.length} ${data.items.length === 1 ? "música" : "músicas"} · ${names[data.provider]}`;
+
+    const ol = $("#list");
+    ol.replaceChildren();
+    data.items.forEach((it, i) => {
+      const li = document.createElement("li");
+      const n = document.createElement("span");
+      n.className = "n";
+      n.textContent = i + 1;
+
+      const box = document.createElement("div");
+      const t = document.createElement("span");
+      t.className = "t";
+      if (it.url) {
+        const link = document.createElement("a");
+        link.href = it.url;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = it.title;
+        t.appendChild(link);
+      } else {
+        t.textContent = it.title;
+      }
+      box.appendChild(t);
+      if (it.artist) {
+        const a = document.createElement("span");
+        a.className = "a";
+        a.textContent = ` – ${it.artist}`;
+        box.appendChild(a);
+      }
+      if (it.raw && it.raw !== it.title) {
+        const raw = document.createElement("span");
+        raw.className = "raw";
+        raw.textContent = `Título original: ${it.raw}`;
+        box.appendChild(raw);
+      }
+      li.append(n, box);
+
+      if (data.provider === "youtube") {
+        const query = [it.artist, it.title].filter(Boolean).join(" ");
+        const btn = document.createElement("a");
+        btn.className = "chorus";
+        btn.textContent = "Buscar no Chorus";
+        btn.href = CHORUS_URL_TEMPLATE.replace("{q}", encodeURIComponent(query));
+        btn.target = "_blank";
+        btn.rel = "noopener noreferrer";
+        btn.title = `Copia "${query}" e abre o Chorus Encore`;
+        btn.addEventListener("click", () => {
+          navigator.clipboard?.writeText(query).catch(() => {});
+        });
+        li.classList.add("has-action");
+        li.appendChild(btn);
+      }
+
+      ol.appendChild(li);
+    });
+
+    const hint = $("#hint");
+    hint.hidden = data.provider !== "youtube";
+    hint.textContent = "O botão copia “artista título” e abre o Chorus Encore. Cole na busca.";
+    $("#result").hidden = false;
+  }
+
+  async function handle(promise) {
+    $("#submit").disabled = true;
+    setMessage("Buscando as músicas…", "ok");
+    $("#result").hidden = true;
+    try {
+      const res = await promise;
+      const data = await res.json();
+      if (!res.ok) {
+        setMessage(data.error || "Não foi possível ler a playlist.", "error", data.code === "NEEDS_LOGIN");
+        return;
+      }
+      setMessage("");
+      render(data);
+    } catch {
+      setMessage("Não consegui falar com o servidor. Ele está rodando?", "error");
+    } finally {
+      $("#submit").disabled = false;
+      loadStatus();
+    }
+  }
+
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    handle(fetch(`/api/playlist?url=${encodeURIComponent($("#url").value.trim())}`));
+  });
+
+  $("#csv").addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const text = await file.text();
+    handle(fetch("/api/csv", { method: "POST", headers: { "Content-Type": "text/plain" }, body: text }));
+    e.target.value = "";
+  });
+
+  $("#copy").addEventListener("click", async () => {
+    const text = current.map((it) => (it.artist ? `${it.artist} - ${it.title}` : it.title)).join("\n");
+    try {
+      await navigator.clipboard.writeText(text);
+      setMessage("Lista copiada.", "ok");
+    } catch {
+      setMessage("Não consegui copiar. Use o botão Baixar CSV.", "error");
+    }
+  });
+
+  $("#download").addEventListener("click", () => {
+    const esc = (s) => `"${String(s ?? "").replace(/"/g, '""')}"`;
+    const csv = ["Track Name,Artist Name(s)", ...current.map((it) => `${esc(it.title)},${esc(it.artist)}`)].join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `${currentName.replace(/[^\w\-]+/g, "_")}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+
+  const flag = new URLSearchParams(location.search).get("spotify");
+  if (flag === "ok") setMessage("Spotify conectado. Cole o link da playlist e tente de novo.", "ok");
+  if (flag === "erro") setMessage("Não foi possível entrar com o Spotify. Tente novamente.", "error");
+  if (flag) history.replaceState(null, "", "/");
+
+  loadStatus();
+</script>
+</body>
+</html>
