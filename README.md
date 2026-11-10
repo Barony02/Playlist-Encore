@@ -62,3 +62,6 @@ public/index.html    interface
 - `chorus.js`: buscar cada faixa no Chorus Encore (com limite de requisições e cache)
 - Matching por similaridade entre artista/título e os resultados
 - Baixar os charts escolhidos e montar o zip
+
+# Playlist-Encore
+
